@@ -27,7 +27,7 @@ func packedSamples(n int, spread float64) []int64 {
 func newPopulatedPacked(spread float64) *PackedHistogram {
 	p := NewPacked(1, 1000000000, 2)
 	for _, v := range packedSamples(500000, spread) {
-		p.RecordValue(v)
+		_ = p.RecordValue(v)
 	}
 	return p
 }
@@ -39,7 +39,7 @@ func BenchmarkPackedRecord(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.RecordValue(s[i&mask])
+		_ = p.RecordValue(s[i&mask])
 	}
 }
 

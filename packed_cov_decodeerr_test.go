@@ -222,7 +222,7 @@ func TestCov_decodeerr_NonZeroNormalizingOffset(t *testing.T) {
 	if _, err := inner.ReadFrom(zr); err != nil {
 		t.Fatal(err)
 	}
-	zr.Close()
+	_ = zr.Close()
 	innerBytes := inner.Bytes()
 	// Sanity: the original offset is zero before we corrupt it.
 	if got := binary.BigEndian.Uint32(innerBytes[8:12]); got != 0 {

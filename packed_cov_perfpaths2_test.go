@@ -16,8 +16,8 @@ func TestCov_perfpaths2_PluralClampAndEarlyReturn(t *testing.T) {
 		if b == 0 {
 			c = 300 // force width 2
 		}
-		p.RecordValues(int64(1000+b*1000), c)
-		d.RecordValues(int64(1000+b*1000), c)
+		_ = p.RecordValues(int64(1000+b*1000), c)
+		_ = d.RecordValues(int64(1000+b*1000), c)
 	}
 	if p.CountWidth() != 2 {
 		t.Fatalf("want width 2, got %d", p.CountWidth())
@@ -35,7 +35,7 @@ func TestCov_perfpaths2_PluralClampAndEarlyReturn(t *testing.T) {
 	// width-1 early return (a distinct code path/line from width 2).
 	p1 := NewPacked(1, 1000000000, 3)
 	for b := 0; b < 12; b++ {
-		p1.RecordValue(int64(1000 + b*1000))
+		_ = p1.RecordValue(int64(1000 + b*1000))
 	}
 	if p1.CountWidth() != 1 {
 		t.Fatalf("want width 1, got %d", p1.CountWidth())

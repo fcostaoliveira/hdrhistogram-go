@@ -209,7 +209,7 @@ func TestCov_minmaxTopBucketSaturates(t *testing.T) {
 	size := p.geom.sizeOfEquivalentValueRange(topVal)
 
 	// Prove the SATURATING branch is the one taken: leq + size would overflow.
-	if !(leq > math.MaxInt64-size) {
+	if leq <= math.MaxInt64-size {
 		t.Fatalf("expected saturating condition leq(%d) > MaxInt64-size(%d)", leq, math.MaxInt64-size)
 	}
 	if got := p.highestEquivalent(topVal); got != math.MaxInt64 {

@@ -123,8 +123,8 @@ func TestCov_perfpaths_RecordFastAndWiden(t *testing.T) {
 		{1, 0xFF, 2}, {100, 0xFFFF, 4}, {70000, 0xFFFFFFFF, 8},
 	} {
 		p := NewPacked(1, 1000000000, 3)
-		p.RecordValues(500, w.start)
-		p.RecordValues(500, w.cross) // hit that overflows current width -> widen fallback
+		_ = p.RecordValues(500, w.start)
+		_ = p.RecordValues(500, w.cross) // hit that overflows current width -> widen fallback
 		if p.CountWidth() != w.to {
 			t.Fatalf("widen fallback: got width %d want %d", p.CountWidth(), w.to)
 		}
@@ -137,8 +137,8 @@ func TestCov_perfpaths_RecordFastAndWiden(t *testing.T) {
 	p := NewPacked(1, 1000000000, 3)
 	d := New(1, 1000000000, 3)
 	for v := int64(200000); v >= 1000; v -= 1000 {
-		p.RecordValue(v)
-		d.RecordValue(v)
+		_ = p.RecordValue(v)
+		_ = d.RecordValue(v)
 	}
 	for i := int32(0); i < d.countsLen; i++ {
 		if p.CountAtValue(d.valueFromFlatIndex(i)) != d.counts[i] {

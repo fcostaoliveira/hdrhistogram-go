@@ -16,8 +16,8 @@ func TestPackedEncodingInterop(t *testing.T) {
 		for i := 0; i < n; i++ {
 			v := r.Int63n(3600000000) + 1
 			c := int64(1 + r.Intn(9))
-			d.RecordValues(v, c)
-			p.RecordValues(v, c)
+			_ = d.RecordValues(v, c)
+			_ = p.RecordValues(v, c)
 		}
 
 		denseEnc, err := d.Encode(V2CompressedEncodingCookieBase)

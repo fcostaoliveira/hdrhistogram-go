@@ -78,8 +78,8 @@ func TestPackedValueAtPercentileMatches(t *testing.T) {
 		d := New(1, 9223372036854775807, 2)
 		p := NewPacked(1, 9223372036854775807, 2)
 		for v := int64(1); v <= int64(length); v++ {
-			d.RecordValue(v)
-			p.RecordValue(v)
+			_ = d.RecordValue(v)
+			_ = p.RecordValue(v)
 		}
 		for v := 1; v <= length; v++ {
 			pct := (100.0 * float64(v)) / float64(length)

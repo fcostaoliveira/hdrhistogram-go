@@ -10,8 +10,8 @@ import (
 // any successfully-decoded histogram must survive query + re-encode + re-decode.
 func FuzzPackedDecodeHostile(f *testing.F) {
 	p := NewPacked(1, 3600000000, 3)
-	p.RecordValue(1000)
-	p.RecordValues(2000000, 500000) // force a wider count width in the corpus
+	_ = p.RecordValue(1000)
+	_ = p.RecordValues(2000000, 500000) // force a wider count width in the corpus
 	if enc, err := p.Encode(); err == nil {
 		f.Add(enc)
 	}
