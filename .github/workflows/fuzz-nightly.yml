@@ -47,7 +47,7 @@ jobs:
 
   fuzz:
     needs: targets
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     # The fuzz step stops itself at FUZZ_MINUTES + 10 (see below), so the corpus
     # is still saved; this job limit is only a backstop.
     timeout-minutes: 360
@@ -105,8 +105,31 @@ jobs:
         # Hard stop 10 minutes after the fuzz time, so a hang still leaves time
         # to save the corpus (the corpus is written as it grows).
         rc=0
-        timeout -k 60 "$(( (FUZZ_MINUTES + 10) * 60 ))" \
-          go test -run='^$' -fuzz='^${{ matrix.target }}$' -fuzztime="${FUZZ_MINUTES}m" -timeout=0 . 2>&1 | tee fuzz.log || rc=$?
+        # GNU timeout is absent on macOS. Use a process-group watchdog so
+        # orphaned fuzz workers cannot outlive the bounded run.
+        python3 - "$FUZZ_MINUTES" '${{ matrix.target }}' <<'PY' 2>&1 | tee fuzz.log || rc=$?
+        import os
+        import signal
+        import subprocess
+        import sys
+
+        minutes = int(sys.argv[1])
+        target = sys.argv[2]
+        cmd = ["go", "test", "-run=^$", "-fuzz=^" + target + "$",
+               "-fuzztime=" + str(minutes) + "m", "-timeout=0", "-parallel=2", "."]
+        process = subprocess.Popen(cmd, start_new_session=True)
+        try:
+            result = process.wait(timeout=(minutes + 10) * 60)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGTERM)
+            try:
+                process.wait(timeout=60)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+            result = 124
+        sys.exit(result)
+        PY
         if [ "$rc" = 124 ] || [ "$rc" = 137 ]; then
           echo "hardstop=true" >> "$GITHUB_OUTPUT"
           echo "::error::${{ matrix.target }} did not finish within ${FUZZ_MINUTES}m + 10m (hang?); stopped so the corpus can still be saved"
