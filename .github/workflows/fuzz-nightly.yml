@@ -47,7 +47,7 @@ jobs:
 
   fuzz:
     needs: targets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     # The fuzz step stops itself at FUZZ_MINUTES + 10 (see below), so the corpus
     # is still saved; this job limit is only a backstop.
     timeout-minutes: 360
