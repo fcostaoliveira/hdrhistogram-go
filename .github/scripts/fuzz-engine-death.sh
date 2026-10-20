@@ -26,4 +26,6 @@ rest=$(grep -E -A12 -- '^--- FAIL' "$log" |
 path=$(sed -n -E 's/^[[:space:]]+Failing input written to (testdata\/fuzz\/[A-Za-z0-9_]+\/[0-9a-f]+)$/\1/p' "$log" | head -1)
 [ -n "$path" ] && [ -f "$path" ] || no "the engine saved no input"
 [ "$(basename "$(dirname "$path")")" = "$target" ] || no "saved input is for another target"
-go test -count=1 -run="^${target}/$(basename "$path")\$" . 2>&1 | tail -5 >&2
+name=$(basename "$path")
+out=$(go test -v -count=1 -run="^${target}/${name}\$" . 2>&1) || { echo "$out" | tail -20 >&2; no "the saved input fails on replay"; }
+echo "$out" | grep -q -- "--- PASS: ${target}/${name}" || no "the replay did not run the saved input"
