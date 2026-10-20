@@ -1,24 +1,29 @@
 #!/usr/bin/env bash
-# Tells a real fuzz failure from the fuzzing engine dying on its own.
+# Tells a real fuzz failure from the fuzzing engine's process dying on its own.
 #
 #   fuzz-engine-death.sh TARGET FUZZ_LOG
 #
-# Exits 0 only if the log shows the engine itself died ("fuzzing process hung or
-# terminated unexpectedly") and every input it saved replays cleanly: nothing then
-# depends on the input, so there is no library bug to report. Any assertion
-# failure, panic, or input that still fails exits 1.
+# Exits 0 only if all of these hold, so the nightly can warn instead of reporting:
+#   - the log's only failure is "fuzzing process hung or terminated unexpectedly[ while minimizing]: EOF";
+#   - the log has no panic, fatal error, out-of-memory, data race or kill signal anywhere;
+#   - the input the engine saved ("Failing input written to ...") replays cleanly on its own.
+# This shows the input is not the cause. It cannot rule out a worker killed by memory growth over many inputs.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 target=${1:?target}
 log=${2:?fuzz log}
 
-grep -q 'fuzzing process hung or terminated unexpectedly' "$log" || exit 1
-# A real failure prints its own message after "--- FAIL"; the engine-death message is the only one.
-if grep -E -A8 -- '^--- FAIL' "$log" | grep -v -E -- '^--- FAIL|^[[:space:]]*(fuzzing process hung|Failing input written|To re-run:)|^[[:space:]]*go test|^FAIL|^exit status|^--$|^[[:space:]]*$' | grep -q .; then
-	exit 1
-fi
+no() { echo "fuzz-engine-death: $1" >&2; exit 1; }
 
-dir="testdata/fuzz/$target"
-[ -d "$dir" ] && [ -n "$(find "$dir" -type f)" ] || exit 1
-# Every saved input is replayed as a seed by a plain test run.
-go test -count=1 -run="^${target}\$" . >/dev/null 2>&1
+grep -q '^--- FAIL' "$log" || no "no failure block in the log"
+grep -q -E '^[[:space:]]+fuzzing process hung or terminated unexpectedly( while minimizing)?: EOF$' "$log" || no "not an engine death"
+if grep -q -E 'panic:|fatal error:|out of memory|DATA RACE|signal: ' "$log"; then no "panic, fatal error, memory or race message in the log"; fi
+# Anything else under the failure block is a real message.
+rest=$(grep -E -A12 -- '^--- FAIL' "$log" |
+	grep -v -E -- '^--- FAIL|^[[:space:]]+(fuzzing process hung|Failing input written|To re-run:|go test )|^FAIL|^exit status|^--$|^[[:space:]]*$' || true)
+[ -z "$rest" ] || no "other failure text: $(echo "$rest" | head -1)"
+
+path=$(sed -n -E 's/^[[:space:]]+Failing input written to (testdata\/fuzz\/[A-Za-z0-9_]+\/[0-9a-f]+)$/\1/p' "$log" | head -1)
+[ -n "$path" ] && [ -f "$path" ] || no "the engine saved no input"
+[ "$(basename "$(dirname "$path")")" = "$target" ] || no "saved input is for another target"
+go test -count=1 -run="^${target}/$(basename "$path")\$" . 2>&1 | tail -5 >&2

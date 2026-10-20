@@ -112,7 +112,7 @@ jobs:
           echo "hardstop=true" >> "$GITHUB_OUTPUT"
           echo "::error::${{ matrix.target }} did not finish within ${FUZZ_MINUTES}m + 10m (hang?); stopped so the corpus can still be saved"
         elif [ "$rc" != 0 ] && .github/scripts/fuzz-engine-death.sh '${{ matrix.target }}' fuzz.log; then
-          # The engine died but the input it saved passes: not a library failure (issue #118). Warn, keep the artifact, don't alert.
+          # The engine process died and the input it saved passes: not an input-dependent failure. Warn, keep the artifact, don't alert.
           echo "enginedeath=true" >> "$GITHUB_OUTPUT"
           echo "::warning::${{ matrix.target }}: the fuzzing engine died ('fuzzing process hung or terminated unexpectedly') and the saved input replays cleanly; not reported as a failure"
           rc=0
